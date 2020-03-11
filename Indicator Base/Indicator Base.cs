@@ -16,7 +16,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Specialized;
 using cAlgo.API;
-using cAlgo.API.Internals;
 
 // --> Microsoft Visual Studio 2017 --> Strumenti --> Gestione pacchetti NuGet --> Gestisci pacchetti NuGet per la soluzione... --> Installa
 using Newtonsoft.Json;
@@ -78,7 +77,11 @@ namespace cAlgo
         protected override void Initialize()
         {
 
-            // --> Qui inizializziamo il nostro indicatore
+            // --> Stampo nei log la versione corrente
+            Print("{0} : {1}", NAME, VERSION);
+
+            // --> Se viene settato l'ID effettua un controllo per verificare eventuali aggiornamenti
+            _checkProductUpdate();
 
         }
 
@@ -98,7 +101,56 @@ namespace cAlgo
 
         #region Private Methods
 
-        // --> Eventuali metodi privati li inseriamo qui
+        /// <summary>
+        /// Effettua un controllo sul sito ctrader.guru per mezzo delle API per verificare la presenza di aggiornamenti, solo in realtime
+        /// </summary>
+        private void _checkProductUpdate()
+        {
+
+            // --> Controllo solo se solo in realtime, evito le chiamate in backtest
+            if (RunningMode != RunningMode.RealTime)
+                return;
+
+            // --> Organizzo i dati per la richiesta degli aggiornamenti
+            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo 
+            {
+
+                MyProduct = new Guru.Product 
+                {
+
+                    ID = ID,
+                    Name = NAME,
+                    Version = VERSION
+
+                },
+                AccountBroker = Account.BrokerName,
+                AccountNumber = Account.Number
+
+            };
+
+            // --> Effettuo la richiesta
+            Guru.API Response = new Guru.API(Request);
+
+            // --> Controllo per prima cosa la presenza di errori di comunicazioni
+            if (Response.ProductInfo.Exception != "")
+            {
+
+                Print("{0} Exception : {1}", NAME, Response.ProductInfo.Exception);
+
+            }
+            // --> Chiedo conferma della presenza di nuovi aggiornamenti
+            else if (Response.HaveNewUpdate())
+            {
+
+                string updatemex = string.Format("{0} : Updates available {1} ( {2} )", NAME, Response.ProductInfo.LastProduct.Version, Response.ProductInfo.LastProduct.Updated);
+
+                // --> Informo l'utente con un messaggio sul grafico e nei log del cbot
+                Chart.DrawStaticText(NAME + "Updates", updatemex, VerticalAlignment.Top, HorizontalAlignment.Left, Color.Red);
+                Print(updatemex);
+
+            }
+
+        }
 
         #endregion
 
@@ -214,7 +266,7 @@ namespace Guru
             {
 
                 // --> Strutturo le informazioni per la richiesta POST
-                NameValueCollection data = new NameValueCollection
+                NameValueCollection data = new NameValueCollection 
                 {
                     {
                         "account_broker",
@@ -259,8 +311,7 @@ namespace Guru
                 // -->>> Nel cBot necessita l'attivazione di "AccessRights = AccessRights.FullAccess"
                 ProductInfo.LastProduct = JsonConvert.DeserializeObject<Product>(ProductInfo.Source);
 
-            }
-            catch (Exception Exp)
+            } catch (Exception Exp)
             {
 
                 // --> Qualcosa è andato storto, registro l'eccezione
