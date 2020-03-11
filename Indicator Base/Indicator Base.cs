@@ -69,6 +69,12 @@ namespace cAlgo
 
         #endregion
 
+        #region Property
+        
+        // --> Qui inseriremo variabili e costanti del progetto
+        
+        #endregion
+
         #region Indicator Events
 
         /// <summary>
