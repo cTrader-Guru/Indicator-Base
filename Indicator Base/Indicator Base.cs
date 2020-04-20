@@ -1,4 +1,4 @@
-﻿/*  CTRADER GURU --> Template 1.0.3
+﻿/*  CTRADER GURU --> Template 1.0.4
 
     Homepage    : https://ctrader.guru/
     Telegram    : https://t.me/ctraderguru
@@ -11,6 +11,7 @@
 */
 
 using System;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -49,7 +50,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.3";
+        public const string VERSION = "1.0.4";
 
         #endregion
 
@@ -70,9 +71,9 @@ namespace cAlgo
         #endregion
 
         #region Property
-        
+
         // --> Qui inseriremo variabili e costanti del progetto
-        
+
         #endregion
 
         #region Indicator Events
@@ -182,6 +183,13 @@ namespace Guru
 
     }
 
+    public class CookieInformation
+    {
+
+        public DateTime LastCheck = new DateTime();
+
+    }
+
     /// <summary>
     /// Offre la possibilità di utilizzare le API messe a disposizione da ctrader.guru per verificare gli aggiornamenti del prodotto.
     /// Permessi utente "AccessRights = AccessRights.FullAccess" per accedere a internet ed utilizzare JSON
@@ -202,6 +210,77 @@ namespace Guru
         /// Variabile dove verranno inserite le direttive per la richiesta
         /// </summary>
         private RequestProductInfo RequestProduct = new RequestProductInfo();
+
+        /// <summary>
+        /// Il percorso della cartella dove riporre i cookie
+        /// </summary>
+        private readonly string _mainpath = string.Format("{0}\\cAlgo\\cTrader GURU\\Cookie", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+
+        /// <summary>
+        /// Il percorso completo del file che verrà utilizzato per il controllo degli aggiornamenti
+        /// </summary>
+        private readonly string _pathsetup;
+
+        /// <summary>
+        /// Legge e rende disponibile i contenuti del cookie
+        /// </summary>
+        /// <returns></returns>
+        private string _loadSetup()
+        {
+
+            try
+            {
+
+                using (StreamReader r = new StreamReader(_pathsetup))
+                {
+                    string json = r.ReadToEnd();
+
+                    return json;
+                }
+
+            }
+            catch
+            {
+
+                return null;
+
+            }
+
+        }
+
+        /// <summary>
+        /// Scrive i valori del cookie
+        /// </summary>
+        /// <param name="mysetup">I valori da registrare</param>
+        /// <returns></returns>
+        private bool _writeSetup(CookieInformation mysetup)
+        {
+
+            try
+            {
+
+                Directory.CreateDirectory(_mainpath);
+
+                using (StreamWriter file = File.CreateText(_pathsetup))
+                {
+
+                    JsonSerializer serializer = new JsonSerializer();
+
+                    serializer.Serialize(file, mysetup);
+
+                }
+
+                return true;
+
+            }
+            catch
+            {
+
+                return false;
+
+            }
+
+        }
 
         /// <summary>
         /// Variabile dove verranno inserite le informazioni identificative dal server dopo l'inizializzazione della classe API
@@ -267,12 +346,56 @@ namespace Guru
             if (Request.MyProduct.ID <= 0)
                 return;
 
+            // --> Rendo disponibile il file del cookie
+            _pathsetup = string.Format("{0}\\{1}.json", _mainpath, Request.MyProduct.ID);
+
+            CookieInformation MySetup = new CookieInformation();
+            DateTime now = DateTime.Now;
+
+            // --> Evito di chiamare il server se non sono passate almeno 24h
+            try
+            {
+
+                string json = _loadSetup();
+
+                if (json != null && json.Trim().Length > 0)
+                {
+
+                    json = json.Trim();
+
+                    MySetup = JsonConvert.DeserializeObject<CookieInformation>(json);
+                    DateTime ExpireDate = MySetup.LastCheck.AddDays(1);
+
+                    // --> Impedisco di controllare se non è passato il tempo necessario
+                    if (now < ExpireDate)
+                    {
+
+                        ProductInfo.Exception = string.Format("Check for updates scheduled for {0}", ExpireDate.ToString());
+                        return;
+
+                    }
+
+                }
+
+            }
+            catch (Exception Exp)
+            {
+
+                // --> Setup corrotto ? resetto!
+                _writeSetup(MySetup);
+
+                // --> Se ci sono errori non controllo perchè non è gestito ed evito di sovraccaricare il server che mi bloccherebbe
+                ProductInfo.Exception = Exp.Message;
+                return;
+
+            }
+
             // --> Dobbiamo supervisionare la chiamata per registrare l'eccexione
             try
             {
 
                 // --> Strutturo le informazioni per la richiesta POST
-                NameValueCollection data = new NameValueCollection 
+                NameValueCollection data = new NameValueCollection
                 {
                     {
                         "account_broker",
@@ -317,7 +440,12 @@ namespace Guru
                 // -->>> Nel cBot necessita l'attivazione di "AccessRights = AccessRights.FullAccess"
                 ProductInfo.LastProduct = JsonConvert.DeserializeObject<Product>(ProductInfo.Source);
 
-            } catch (Exception Exp)
+                // --> Salviamo la sessione
+                MySetup.LastCheck = now;
+                _writeSetup(MySetup);
+
+            }
+            catch (Exception Exp)
             {
 
                 // --> Qualcosa è andato storto, registro l'eccezione
