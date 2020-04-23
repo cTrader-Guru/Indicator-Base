@@ -12,11 +12,11 @@
 
 using System;
 using System.IO;
+using cAlgo.API;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Specialized;
-using cAlgo.API;
 
 // --> Microsoft Visual Studio 2017 --> Strumenti --> Gestione pacchetti NuGet --> Gestisci pacchetti NuGet per la soluzione... --> Installa
 using Newtonsoft.Json;
@@ -238,8 +238,7 @@ namespace Guru
                     return json;
                 }
 
-            }
-            catch
+            } catch
             {
 
                 return null;
@@ -272,8 +271,7 @@ namespace Guru
 
                 return true;
 
-            }
-            catch
+            } catch
             {
 
                 return false;
@@ -377,8 +375,7 @@ namespace Guru
 
                 }
 
-            }
-            catch (Exception Exp)
+            } catch (Exception Exp)
             {
 
                 // --> Setup corrotto ? resetto!
@@ -395,7 +392,7 @@ namespace Guru
             {
 
                 // --> Strutturo le informazioni per la richiesta POST
-                NameValueCollection data = new NameValueCollection
+                NameValueCollection data = new NameValueCollection 
                 {
                     {
                         "account_broker",
@@ -444,8 +441,7 @@ namespace Guru
                 MySetup.LastCheck = now;
                 _writeSetup(MySetup);
 
-            }
-            catch (Exception Exp)
+            } catch (Exception Exp)
             {
 
                 // --> Qualcosa è andato storto, registro l'eccezione
