@@ -1,4 +1,4 @@
-﻿/*  CTRADER GURU --> Indicator Template 1.0.5
+﻿/*  CTRADER GURU --> Indicator Template 1.0.6
 
     Homepage    : https://ctrader.guru/
     Telegram    : https://t.me/ctraderguru
@@ -34,7 +34,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.5";
+        public const string VERSION = "1.0.6";
 
         #endregion
 
