@@ -1,4 +1,4 @@
-﻿/*  CTRADER GURU --> Indicator Template 1.0.6
+﻿/*  CTRADER GURU --> Indicator Template 1.0.7
 
     Homepage    : https://ctrader.guru/
     Telegram    : https://t.me/ctraderguru
@@ -9,10 +9,77 @@
 
 */
 
+using System;
 using cAlgo.API;
+using cAlgo.API.Indicators;
+using cAlgo.API.Internals;
 
 namespace cAlgo
 {
+
+    // --> Estensioni che rendono il codice più leggibile
+    #region Extensions
+
+    /// <summary>
+    /// Estensione che fornisce metodi aggiuntivi per il simbolo
+    /// </summary>
+    public static class SymbolExtensions
+    {
+
+        /// <summary>
+        /// Converte il numero di pips corrente da digits a double
+        /// </summary>
+        /// <param name="Pips">Il numero di pips nel formato Digits</param>
+        /// <returns></returns>
+        public static double DigitsToPips(this Symbol MySymbol, double Pips)
+        {
+
+            return Math.Round(Pips / MySymbol.PipSize, 2);
+
+        }
+
+        /// <summary>
+        /// Converte il numero di pips corrente da double a digits
+        /// </summary>
+        /// <param name="Pips">Il numero di pips nel formato Double (2)</param>
+        /// <returns></returns>
+        public static double PipsToDigits(this Symbol MySymbol, double Pips)
+        {
+
+            return Math.Round(Pips * MySymbol.PipSize, MySymbol.Digits);
+
+        }
+
+    }
+
+    /// <summary>
+    /// Estensione che fornisce metodi aggiuntivi per le Bars
+    /// </summary>
+    public static class BarsExtensions
+    {
+
+        /// <summary>
+        /// Converte l'indice di una bar partendo dalla data di apertura
+        /// </summary>
+        /// <param name="MyTime">La data e l'ora di apertura della candela</param>
+        /// <returns></returns>
+        public static int GetIndexByDate(this Bars MyBars, DateTime MyTime)
+        {
+
+            for (int i = MyBars.ClosePrices.Count - 1; i >= 0; i--)
+            {
+
+                if (MyTime == MyBars.OpenTimes[i]) return i;
+
+            }
+
+            return -1;
+
+        }
+
+    }
+
+    #endregion
 
     [Indicator(IsOverlay = false, TimeZone = TimeZones.UTC, AccessRights = AccessRights.FullAccess)]
     public class INDICATORBASE : Indicator
@@ -34,7 +101,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.6";
+        public const string VERSION = "1.0.7";
 
         #endregion
 
